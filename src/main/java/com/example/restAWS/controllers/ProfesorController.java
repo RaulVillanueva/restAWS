@@ -26,7 +26,10 @@ public class ProfesorController {
     @GetMapping("/profesores") 
     public ResponseEntity<List<ProfesorModel>> obtenerProfesores(){
         try{
-            return new ResponseEntity<>(listaProfesores, HttpStatus.OK);
+            return ResponseEntity
+                .status(HttpStatus.OK)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(listaProfesores);
         } catch (Exception e) {
            return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
