@@ -1,9 +1,8 @@
 package com.example.restAWS.controllers;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,21 +16,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.restAWS.models.ProfesorModel;
+import com.example.restAWS.services.ProfesorService;
 
 @RestController
 @RequestMapping
 public class ProfesorController {
-    public static List<ProfesorModel> listaProfesores = new ArrayList<>();
- 
+    @Autowired
+    private ProfesorService profesorService;
+
     @GetMapping("/profesores") 
     public ResponseEntity<List<ProfesorModel>> obtenerProfesores(){
         try{
+            List<ProfesorModel> profesores = profesorService.obtenerProfesores();
             return ResponseEntity
                 .status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(listaProfesores);
-        } catch (Exception e) {
-           return ResponseEntity
+                .body(profesores);
+        }catch (Exception e) {
+            return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
                 .build();
@@ -41,19 +43,21 @@ public class ProfesorController {
     @GetMapping("/profesores/{id}")
     public ResponseEntity<ProfesorModel> obtenerProfesor(@PathVariable Long id) {
         try{
-            for (ProfesorModel profesor : listaProfesores) {
-                if (profesor.getId() == id) {
-                    return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(profesor);
-                }
+            long idLong = id;
+            ProfesorModel profesorEncontrado = profesorService.obtenerProfesor(idLong);
+            
+            if(profesorEncontrado.getId() != -1){
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(profesorEncontrado);
+            }else{
+                return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build(); 
             }
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .build(); 
-        } catch (Exception e) {
+        }catch (Exception e) {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -66,11 +70,11 @@ public class ProfesorController {
         try {
             HttpStatus status = isValidProfesor(profesorRequest);
             if (status == HttpStatus.OK) {
-                listaProfesores.add(new ProfesorModel(profesorRequest.getId(), profesorRequest.getNumeroEmpleado(), profesorRequest.getNombres(), profesorRequest.getApellidos(), profesorRequest.getHorasClase()));
+                ProfesorModel profesorCreado = profesorService.agregarProfesor(profesorRequest);
                 return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .build();
+                    .body(profesorCreado);
             } else {
                 return ResponseEntity
                     .status(status)
@@ -84,30 +88,26 @@ public class ProfesorController {
                 .build();
         }
     }
-
+    
     @PutMapping("/profesores/{id}")
     public ResponseEntity<ProfesorModel> actualizarProfesor(@PathVariable Long id, @RequestBody ProfesorModel profesorRequest) {
         try {
             HttpStatus status = isValidProfesor(profesorRequest);
             if (status == HttpStatus.OK) {
-                Iterator<ProfesorModel> iterator = listaProfesores.iterator();
-                while (iterator.hasNext()) {
-                    ProfesorModel profesor = iterator.next();
-                    if (profesor.getId() == id) {
-                        profesor.setNumeroEmpleado(profesorRequest.getNumeroEmpleado());
-                        profesor.setNombres(profesorRequest.getNombres());
-                        profesor.setApellidos(profesorRequest.getApellidos());
-                        profesor.setHorasClase(profesorRequest.getHorasClase());
-                        return ResponseEntity
-                            .status(HttpStatus.OK)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(profesor);
-                    }
+                ProfesorModel profesorEncontrado = profesorService.obtenerProfesor(id);
+                if(profesorEncontrado != null) {
+                    profesorRequest.setId(Long.valueOf(id).intValue());
+                    ProfesorModel profesorActualizado = profesorService.agregarProfesor(profesorRequest);
+                    return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(profesorActualizado);
+                }else{
+                    return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .build(); 
                 }
-                return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .build(); 
             } else {
                 return ResponseEntity
                     .status(status)
@@ -125,27 +125,27 @@ public class ProfesorController {
     @DeleteMapping("/profesores/{id}")
     public ResponseEntity<ProfesorModel> eliminarProfesor(@PathVariable Long id){
         try{
-            Iterator<ProfesorModel> iterator = listaProfesores.iterator();
-            while (iterator.hasNext()) {
-                ProfesorModel profesor = iterator.next();
-                if (profesor.getId() == id) {
-                    iterator.remove();
-                    return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(profesor);
-                }
-            }
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .build(); 
+            long idLong = id;
+            ProfesorModel profesorEncontrado = profesorService.obtenerProfesor(idLong);
+            
+            if(profesorEncontrado.getId() != -1){
+                profesorService.eliminarProfesor(id);
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build();
+            }else{
+                return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build(); 
+            } 
         } catch (Exception e) {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
                 .build();
-        }
+        }   
     }
     
     private HttpStatus isValidProfesor(ProfesorModel rawProfesor){

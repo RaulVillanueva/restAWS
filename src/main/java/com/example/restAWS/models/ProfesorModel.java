@@ -1,12 +1,24 @@
 package com.example.restAWS.models;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "profesores")
 public class ProfesorModel {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    
     private int id;
     private int numeroEmpleado;
     private String nombres;
     private String apellidos;
     private int horasClase;
   
+    public ProfesorModel() {}
     public ProfesorModel(int id, int numeroEmpleado, String nombres, String apellidos, int horasClase){
         this.id = id;
         this.numeroEmpleado = numeroEmpleado;

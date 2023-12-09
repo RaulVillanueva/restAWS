@@ -1,9 +1,10 @@
 package com.example.restAWS.controllers;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -14,44 +15,57 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.example.restAWS.models.AlumnoModel;
+import com.example.restAWS.services.AlumnoService;
+import com.example.restAWS.services.AmazonS3Service;
+import com.example.restAWS.services.SnsService;
+
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 @RestController
 @RequestMapping
 public class AlumnoController {
-    public static List<AlumnoModel> listaAlumnos = new ArrayList<>();
- 
+    @Autowired
+    private AlumnoService alumnoService;
+
     @GetMapping("/alumnos") 
     public ResponseEntity<List<AlumnoModel>> obtenerAlumnos(){
         try{
+            List<AlumnoModel> alumnos = alumnoService.obtenerAlumnos();
             return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(listaAlumnos);
+                .status(HttpStatus.OK)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(alumnos);
         }catch (Exception e) {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
                 .build();
         }
-    }
+    }    
 
     @GetMapping("/alumnos/{id}")
     public ResponseEntity<AlumnoModel> obtenerAlumno(@PathVariable Long id) {
         try{
-            for (AlumnoModel alumno : listaAlumnos) {
-                if (alumno.getId() == id) {
-                    return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(alumno);
-                }
+            long idLong = id;
+            AlumnoModel alumnoEncontrado = alumnoService.obtenerAlumno(idLong);
+            
+            if(alumnoEncontrado.getId() != -1){
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(alumnoEncontrado);
+            }else{
+                return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build(); 
             }
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .build(); 
         }catch (Exception e) {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -65,11 +79,11 @@ public class AlumnoController {
         try {
             HttpStatus status = isValidAlumno(alumnoRequest);
             if (status == HttpStatus.OK) {
-                listaAlumnos.add(new AlumnoModel(alumnoRequest.getId(), alumnoRequest.getNombres(), alumnoRequest.getApellidos(), alumnoRequest.getMatricula(), alumnoRequest.getPromedio()));
+                AlumnoModel alumnoCreado = alumnoService.agregarAlumno(alumnoRequest);
                 return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .build();
+                    .body(alumnoCreado);
             } else {
                 return ResponseEntity
                     .status(status)
@@ -84,29 +98,97 @@ public class AlumnoController {
         }
     }
 
+    @PostMapping("/alumnos/{id}/fotoPerfil")
+    public ResponseEntity<AlumnoModel> subirFotoPerfil(@RequestParam("foto") MultipartFile foto, @PathVariable Long id){
+        try{
+            long idLong = id;
+            AlumnoModel alumnoEncontrado = alumnoService.obtenerAlumno(idLong);
+            
+            if(alumnoEncontrado.getId() != -1){
+                AmazonS3Service amazonS3Service = new AmazonS3Service();
+                File convertedFile = convertMultiPartToFile(foto);
+                String key = "foto-" + alumnoEncontrado.getMatricula() + "-" + alumnoEncontrado.getApellidos() + "-" + alumnoEncontrado.getNombres();
+                
+                amazonS3Service.getS3Client().putObject(PutObjectRequest.builder()
+                    .bucket(amazonS3Service.getBucketName())
+                    .key(key)
+                    .build(), convertedFile.toPath());
+                
+                alumnoEncontrado.setFotoPerfilUrl("https://" + amazonS3Service.getBucketName() + ".s3.amazonaws.com/" + key);
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(alumnoService.agregarAlumno(alumnoEncontrado));
+            }else{
+                return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build(); 
+            }
+        }catch (Exception e) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .build();
+        }
+    }
+
+    @PostMapping("/alumnos/{id}/email") 
+    public ResponseEntity<AlumnoModel> enviarNotificacion(@PathVariable Long id){
+        try{
+            long idLong = id;
+            AlumnoModel alumnoEncontrado = alumnoService.obtenerAlumno(idLong);
+            
+            if(alumnoEncontrado.getId() != -1){
+                SnsService snsService = new SnsService();
+
+                String message = "La calificación final del alumno " +
+                alumnoEncontrado.getNombres() + " " +
+                alumnoEncontrado.getApellidos() + 
+                " es de: " + alumnoEncontrado.getPromedio();
+                
+                snsService.getSnsClient().publish(PublishRequest.builder()
+                    .topicArn(snsService.getTopicARN())
+                    .message(message)
+                    .build());
+
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(alumnoService.agregarAlumno(alumnoEncontrado));
+            }else{
+                return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build(); 
+            }
+        }catch (Exception e) {
+            return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .build();
+        }
+    } 
+
     @PutMapping("/alumnos/{id}")
     public ResponseEntity<AlumnoModel> actualizarAlumno(@PathVariable Long id, @RequestBody AlumnoModel alumnoRequest) {
         try {
             HttpStatus status = isValidAlumno(alumnoRequest);
             if (status == HttpStatus.OK) {
-                Iterator<AlumnoModel> iterator = listaAlumnos.iterator();
-                while (iterator.hasNext()) {
-                    AlumnoModel alumno = iterator.next();
-                    if (alumno.getId() == id) {
-                        alumno.setNombres(alumnoRequest.getNombres());
-                        alumno.setApellidos(alumnoRequest.getApellidos());
-                        alumno.setMatricula(alumnoRequest.getMatricula());
-                        alumno.setPromedio(alumnoRequest.getPromedio());
-                        return ResponseEntity
-                            .status(HttpStatus.OK)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(alumno);
-                    }
+                AlumnoModel alumnoEncontrado = alumnoService.obtenerAlumno(id);
+                if(alumnoEncontrado != null) {
+                    alumnoRequest.setId(Long.valueOf(id).intValue());
+                    AlumnoModel alumnoActualizado = alumnoService.agregarAlumno(alumnoRequest);
+                    return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(alumnoActualizado);
+                }else{
+                    return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .build(); 
                 }
-                return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .build(); 
             } else {
                 return ResponseEntity
                     .status(status)
@@ -124,27 +206,33 @@ public class AlumnoController {
     @DeleteMapping("/alumnos/{id}")
     public ResponseEntity<AlumnoModel> eliminarAlumno(@PathVariable Long id){
         try{
-            Iterator<AlumnoModel> iterator = listaAlumnos.iterator();
-            while (iterator.hasNext()) {
-                AlumnoModel alumno = iterator.next();
-                if (alumno.getId() == id) {
-                    iterator.remove();
-                    return ResponseEntity
-                        .status(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(alumno);
-                }
-            }
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .build(); 
+            long idLong = id;
+            AlumnoModel alumnoEncontrado = alumnoService.obtenerAlumno(idLong);
+            
+            if(alumnoEncontrado.getId() != -1){
+                alumnoService.eliminarAlumno(id);
+                return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build();
+            }else{
+                return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .build(); 
+            } 
         } catch (Exception e) {
             return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
                 .build();
         }   
+    }
+
+    private File convertMultiPartToFile(MultipartFile file) throws IOException {
+        File convertedFile = new File(System.getProperty("java.io.tmpdir") + "/" + file.getOriginalFilename());
+        file.transferTo(convertedFile);
+        return convertedFile;
     }
     
     private HttpStatus isValidAlumno(AlumnoModel rawAlumnno){
