@@ -8,9 +8,9 @@ import software.amazon.awssdk.services.sns.SnsClient;
 public class SnsService {
     private SnsClient snsClient;
     private final String TOPIC_ARN = "arn:aws:sns:us-east-1:967529193288:CalificacionesAlumnos";
-    private final String ACCESS_KEY = "ASIA6CRJ335EF3CPMAUV";
-    private final String SECRET_KEY = "Hm8PkGFXXJRo2ngDx9srNWwnm5WuExNKtB1UngC+";
-    private final String SESSION_TOKEN = "FwoGZXIvYXdzEIH//////////wEaDCGBIsDN4WSyUXznPiLUAXjwBnUIq8ntTlDgFjHfEip9mnsppov8pFIlci8BccmBxP1kqf5lLClm7IJ777IWQ4fzTjiO6XogN3fqXNonljt04vNs8Gv4KBb5AkE+ZlpsallKfTAWZ4ZkqxDOEQNoddHLpcXkShnuA6YzZN+bRl2SlPBtEMMWSlAxuTTFHrXvWcXaN/qFN2FLNXeYT3TLFhtutuOqQz7HJv7sNqnhFCUbtkM7ub1dDCK+QUoMN4RK3OyWy4i70bxK9cJUtPxMSxlzumeGfu0jSK+Sx/SMwGRBCY3tKOiQ0qsGMi0h+t64EVeBBDPTE2KVuwrA9HkyPg21zURc4wykfAq9z3RYwV6rQxeAGKbi17w=";
+    private final String ACCESS_KEY = "ASIA6CRJ335EH7ZKRNNG";
+    private final String SECRET_KEY = "IuV5nzd/Aolaiav1FQUCreIS3/588hK3cw5SHPRG";
+    private final String SESSION_TOKEN = "FwoGZXIvYXdzEI7//////////wEaDCeUmgveGmBuMGIaxyLUATTE52uOtjnxLNTcJBED3m3ZsAAfuTfVhAIowTzKBow/pN/itX4hHsUr+R3pD+RlWnBqAjcKp0jXr6Yu6E9wfE1g1bqYbP6ubKzQRpScwQLVeqTm7SKVbE9F2ksIWmnrqx/HGPaiPRYiueX4xA/1HrYIgc/WHMYKjoIO8Rdv1pGKAoUXT8DzdeO/B0EBf1/gQDWx/rwesc8Uk9TXA6W4g9JQ+pABHMLNYQJ1MYUDMmoceI6X1YOp4dI/hZ+lN4gIWr21rihtXgKjC/OJleRAYzpi3NcHKO2B1asGMi0fluTfASomFdCG1DnJlcxznxIE7Cg9yx/4lwyAJC+5M6DKXs39lfcTQbwQfSI=";
     
     public SnsService() {
         AwsSessionCredentials awsCredentials = AwsSessionCredentials.create(ACCESS_KEY, SECRET_KEY, SESSION_TOKEN);
