@@ -1,8 +1,8 @@
 package com.example.restAWS;
 
 public class Credenciales {
-    public static final String ACCESS_KEY = "ASIA6CRJ335EA4SNWMHU";
-    public static final String SECRET_KEY = "aiP9yVVK4ovZb67QQjAWKsbOgX9qJwoaFZJQs3kD";
-    public static final String SESSION_TOKEN = "FwoGZXIvYXdzEJn//////////wEaDABBOdw+b5G/fse1nSLUAVnh596KPffjSuLgzVaQYcoozzExbH6W21xiJXV+ewqe0GhrbIyEfytPCuwJaAT/FRA+Ria/4rzUl+s6kWhrECTqUPHmPxG7liwLLiCdtTFko1SkvCwzSKJ5e+hGhmO87gVmoluC2x8FBMFv/MwAk6Qgeb5mAD1lSGQernFyWxD+R+FWtpDzDrD2NovTZ4xguDFLMg4nO/WYsYXPmcVQjesC2/aPahTCSk3SXU1yrdKkFMa+bLiis/a68+0A5cYg9Qx0rJuDeNxHMrHMss8YvyPAnymWKPu316sGMi0AcOHPGET+s2lm8RcrMOUppjAXFONwIWuwNZ4jfvTadzjTIdhkWuvRwDhcYQ4=";
+    public static final String ACCESS_KEY = "ASIA6CRJ335EK663RBW6";
+    public static final String SECRET_KEY = "ZpxYwogeeBBnZWivo5l0lQe7QdP4oHZSGNcCDAE2";
+    public static final String SESSION_TOKEN = "FwoGZXIvYXdzELn//////////wEaDDGvvMnvH0h+Y/Fa2yLUAWxh4uapO6/rq9SS2kHkkAkJ1uf+UZL1Agbc87hknn8d4IZzyHDPxFkqSs2dSV6oZtRQibB533alFXSvCoI+DE06hLXOhYMw6Y/nKYt97MZ9qgAnr+ERPay26tl5T8hTngJpoWDx9hWlUG93UJICnexsY2KfXVLl2Qc4RpJCmkgx6aXMwPOR4oWnacm0kogYWMRN5YCL1PC5JjgZAb8LrN1X3DSK3rJjT/2qDnBlxB+BrOpdPd9v0OAHRepe2qaFst+emoZlfADuot5CJ0mUxIvToDTuKNXC3qsGMi2K9hdrpOShLrhOfkh8k0nwnvaDvR+FFTqs8IICN/vgEpdYkIAIziau8qDG++Q=";
     
 }
